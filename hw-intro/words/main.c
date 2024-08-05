@@ -74,13 +74,55 @@ int num_words(FILE* infile) {
  * 1 in the event of any errors (e.g. wclist or infile is NULL)
  * and 0 otherwise.
  */
-int count_words(WordCount** wclist, FILE* infile) { return 0; }
+int count_words(WordCount** wclist, FILE* infile) {
+  if (wclist == NULL || infile == NULL) {
+    return 1;
+  }
+
+  int c;
+  char temp_word[1000];
+  int word_length = 0;
+
+  while ((c = fgetc(infile)) != EOF) {
+    if (isalpha(c)) {
+      // if it's a letter, add to our word
+      if (word_length < 999) {
+        temp_word[word_length] = tolower(c);
+        word_length++;
+      }
+    } else {
+      // if it's not a letter, then we've finished a word
+      if (word_length > 0) {
+        temp_word[word_length] = '\0'; // end string with null terminator
+        add_word(wclist, temp_word);
+        word_length = 0; // reset to start new word
+      }
+    }
+  }
+
+  if (word_length >
+      0) { // when a file ends with a word, our 'while loop' may have stopped before the last word
+    temp_word[word_length] = '\0';
+    add_word(wclist, temp_word);
+  }
+
+  return 0;
+}
 
 /*
  * Comparator to sort list by frequency.
  * Useful function: strcmp().
  */
-static bool wordcount_less(const WordCount* wc1, const WordCount* wc2) { return 0; }
+static bool wordcount_less(const WordCount* wc1, const WordCount* wc2) {
+  if (wc1->count < wc2->count) {
+    return true;
+  } else if (wc1->count > wc2->count) {
+    return false;
+  } else {
+    return strcmp(wc1->word, wc2->word) <
+           0; //a condition, strcmp returns -1 if the first argument is smaller than the second
+  }
+}
 
 // In trying times, displays a helpful message.
 static int display_help(void) {
@@ -147,7 +189,7 @@ int main(int argc, char* argv[]) {
     // found at argv[argc-1].
     for (int i = optind; i < argc; i++) {
       infile = fopen(argv[i], "r");
-      if (infile == NULL) {
+      if (infile == NULL) { // handle case where file doesn't exist
         perror("Error opening file");
         continue; // Skip to the next file
       }
